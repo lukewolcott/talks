@@ -36,9 +36,9 @@ Topology is the study of space and spaces.  Pure topology asks questions about t
 
 **Topological data analysis (TDA)** is topology applied to understanding "the shape of data".  For example, how many connected components does the dataset have? How many holes, of what dimensions?
 
-My favorite introductory TDA paper is [Topology and Data](http://www.ams.org/journals/bull/2009-46-02/S0273-0979-09-01249-X/), by Gunnar Carlsson, a Stanford math professor who is a co-founder of [Ayasdi](https://www.ayasdi.com/), the only TDA-centric data analysis company.
+My favorite introductory TDA paper is [Topology and Data](http://www.ams.org/journals/bull/2009-46-02/S0273-0979-09-01249-X/), by Gunnar Carlsson, a Stanford math professor who is a co-founder of [Ayasdi](https://www.ayasdi.com/), the only TDA-centric data analysis company (that I know of).
 
-A non-technical paper with several examples of real-world applications of TDA is [Extracting Insights from the Shape of Complex Data Using Topology](https://www.nature.com/articles/srep01236), by P.Y.Lum et.al.
+A non-technical paper with several examples of real-world applications of TDA is [Extracting Insights from the Shape of Complex Data Using Topology](https://www.nature.com/articles/srep01236), by P. Y. Lum et al.
 
 
 ---
