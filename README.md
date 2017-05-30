@@ -1,6 +1,6 @@
 # My Data Science talks
 
-- **170530_Lyft**: "Intro to topological data analysis". Lyft Seattle office. 30 May 2017.
+- **170530_Lyft**: "[Intro to topological data analysis](https://lukewolcott.github.io/talks/170530_Lyft/IntroToTDA.html)". Lyft Seattle office. 30 May 2017.
 
 - **170105_JMM**: "Interactive software for topological data analysis". Joint Mathematics Meeting. 5 January 2017.
 
