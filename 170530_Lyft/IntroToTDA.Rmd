@@ -1,0 +1,296 @@
+---
+title: "Intro to Topological Data Analysis"
+author: "Luke Wolcott"
+date: "May 30, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE, echo=FALSE)
+```
+
+---
+
+#### Outline
+
+- topology context; what is TDA good for?
+
+- explanation and demonstration in 2D
+
+- examples with real datasets: clustering; cycles from delayed oscillation
+
+---
+
+## Context
+
+Topology is the study of space and spaces.  Pure topology asks questions about the generic properties of space, invariant under continuous deformation... there is no distance, no angles, no calculus.
+
+
+
+![Fig.1: A donut and a coffee cup are "the same" to a topologist.](ccdonut.jpg)
+
+
+![Fig.2: Proof from a paper I wrote.](proof.png)
+
+---
+
+**Topological data analysis (TDA)** is topology applied to understanding "the shape of data".  For example, how many connected components does the dataset have? How many holes, of what dimensions?
+
+My favorite introductory TDA paper is [Topology and Data](http://www.ams.org/journals/bull/2009-46-02/S0273-0979-09-01249-X/), by Gunnar Carlsson, a Stanford math professor who is a co-founder of [Ayasdi](https://www.ayasdi.com/), the only TDA-centric data analysis company.
+
+A non-technical paper with several examples of real-world applications of TDA is [Extracting Insights from the Shape of Complex Data Using Topology](https://www.nature.com/articles/srep01236), by P.Y.Lum et.al.
+
+
+---
+
+### Examples of applications; what is TDA good for?
+
+Zero-dimensional persistent homology can tell you what k to use for k-means clustering.
+
+One-dimensional persistent homology can detect cycles in a network, or a dynamic predatory-prey or position-velocity equilibrium.
+
+Higher-dimensional persistent homology detects more complex global structure in the data.
+
+TDA is holistic/global, so you don't need to know what you're looking for.  
+
+It is (or can be) robust to noise and deformations, so is somewhat scale-independent.
+
+---
+
+![Fig. 3: [Muthu Alagappan, Stanford](https://www.wired.com/2012/04/analytics-basketball/). 2010-2011. 452 NBA Players, 7 normalized statistics](basketball.png)
+
+---
+
+
+![Fig.4: [G Carlsson et al. International Journal of Computer Vision](https://link.springer.com/article/10.1007/s11263-007-0056-x), 2008](computer-vision.png)
+
+---
+
+
+![Fig.5: [M Nicolau et al. PNAS](http://www.pnas.org/content/108/17/7265.abstract), 2011.](breast-cancer.png)
+
+---
+
+
+![Fig.6: [P Y Lum et al. Scientific Reports](https://www.nature.com/articles/srep01236), 2013.](voting-fragmentation.png)
+
+---
+
+
+![Fig.7: [S Martin el al. Journal of Chemical Physics](http://www.cs.otago.ac.nz/homepages/smartin/publications_long.php), 2011.](blue orb.png)
+
+---
+
+
+### Implementations
+
+There is an [R package called TDA](https://cran.r-project.org/web/packages/TDA/index.html) -- very handy but not the fastest probably.
+
+The fastest implementations of TDA algorithms are in C++.  There's a short introduction to TDA and [thorough comparison of algorithms and software in this paper](https://arxiv.org/abs/1506.08903).
+
+---
+
+## Explanation and demonstration in 2D
+
+![Fig.8: The persistent homology pipeline.](TDA-pipeline.png)
+
+I wrote a nifty Processing sketch to explain what a persistent homology barcode is...
+
+---
+
+## Three examples with real datasets
+
+Here are some examples from my own work.
+
+- A. Clustering of Chicago's 77 "Community Areas"
+
+- B. Cycles and bubbles from delayed oscillations
+
+- C. Clustering Indian households
+
+---
+
+### A. Clustering of Chicago's 77 Community Areas
+
+[Based on [this report](https://lukewolcott.github.io/InTheResistance/Week9/ClusteringChicago.html).]
+
+The City of Chicago divides itself into 77 "Community Areas".  The city’s data website has a nice dataset (downloaded from [here](https://data.cityofchicago.org/Health-Human-Services/Public-Health-Statistics-Selected-public-health-in/iqnk-2tcu), codebook [here](https://data.cityofchicago.org/api/assets/2107948F-357D-4ED7-ACC2-2E9266BBFFA2)) that contains information on 27 different public health and economic factors for each of the 77 areas. It has information on 21 health factors: fertility rates, cancer rates, lead poisoning, STD rates, etc., as well six economic factors: “Below.Poverty.Level”, “Crowded.Housing”, “Dependency” “No.High.School.Diploma”, “Per.Capita.Income”, and “Unemployment”.
+
+Ignoring labels, we have 77 points in 27-dimensional space.  Here are the column names.  We want to cluster according to 3-23, and see where these clusters live in economic space (24-29).
+
+```{r}
+data <- read.csv("Public_Health_Statistics-_Selected_public_health_indicators_by_Chicago_community_area.csv", na.strings = c("","."))
+
+# impute median values for two columns with NAs
+med_fm <- median(na.omit(data$Gonorrhea.in.Females))
+med_m <- median(na.omit(data$Gonorrhea.in.Males))
+for (i in 1:77){
+      if (is.na(data[i,21]))
+            data[i,21] <- med_fm
+      if (is.na(data[i,22]))
+            data[i,22] <- med_m
+}
+
+# impute median values for two more NAs in row 54
+data[54,19] <- median(na.omit(data[,19]))
+data[54,20] <- median(na.omit(data[,20]))
+
+# scale all numeric columns
+data_scaled <- data
+for (i in 3:29)
+      data_scaled[,i] <- scale(data[,i])
+
+set.seed(134) 
+
+names(data_scaled)
+d <- data_scaled[,3:23]
+```
+
+To determine the number of clusters, look at the persistence barcode.
+
+```{r}
+
+library(TDA)
+maxscale <- 7 
+maxdimension <- 1
+Diag <- ripsDiag(X = d, maxdimension, maxscale, library = "GUDHI")      
+plot(Diag[["diagram"]], barcode = TRUE)
+mtext("Barcode of 0D and 1D persistent homology")
+legend("right", lty=c(1,1), lwd=c(3,3), col=c("red", "black"), legend=c("H1", "H0"))
+```
+
+```{r}
+plot(Diag[["diagram"]], barcode = FALSE)
+mtext("Persistence diagram of 0D and 1D persistent homology")
+legend("right", lty=c(1,1), lwd=c(3,3), col=c("red", "black"), legend=c("H1", "H0"))
+```
+
+So try using **k = 3** or **k = 5**, but not k = 4.  
+
+First we cluster with k = 3 (using only the health data columns).  Two important economic factors are Per.Capita.Income and Unemployment.  The next plot shows how the three clusters occupy this space.  It does seem that they maintain their clusters.
+
+```{r}
+library(ggplot2)
+km <- kmeans(data_scaled[,3:23],3,nstart=20)
+
+g <- ggplot(data, aes(Per.Capita.Income, Unemployment))
+g <- g + geom_point(aes(color=as.factor(km$cluster)))
+g <- g + labs(x="Per Capita Income (dollars)", y="Unemployment rate ")
+g + labs(title="Three clusters based on health data, in economic space")
+```
+
+
+And the same plot using k=5 clusters:
+
+```{r}
+km2 <- kmeans(data_scaled[,3:23],5,nstart=20)
+g <- ggplot(data, aes(Per.Capita.Income, Unemployment))
+g <- g + geom_point(aes(color=as.factor(km2$cluster)))
+g <- g + labs(x="Per Capita Income (dollars)", y="Unemployment rate ")
+g + labs(title="Five clusters based on health data, in economic space")
+```
+
+---
+
+### B. Cycles and bubbles from delayed oscillations
+
+[Based on [this report](https://lukewolcott.github.io/ModulatedPredatorPrey/ExploratoryDataAnalysis.html).]
+
+The 2000 Science article “[Crossing the Hopf Bifurcation in a Live Predator-Prey System](http://biology.mcgill.ca/faculty/fussmann/articles/Fussmann_2000_Science.pdf)” by Fussmann et. al. measured predator-prey population dynamics modulated by a third parameter. It recorded population fluctuations of planktonic rotifers (Brachionus calyciflorus, the predators) and green algae (Chlorella vulgaris, the prey) over runs of 50-250 days in carefully stabilized chemostats. The nutrient nitrogen was also added to the systems and held at a constant. The dilution rate delta (the fraction of the system’s volume that was replaced daily) was varied in each of the trial runs.
+
+The study found that for extreme values of delta the populations were static and stable – either dying off or converging to constants – but in an intermediate range the populations exhibited the delayed oscillations that are classic dynamics in predator-prey systems.
+
+```{r, cache=TRUE}
+data <- read.csv("data_cleaned.csv")
+```
+
+#### All the data at once
+
+```{r}
+library(plotly)
+plot_ly(x = data$meandelta, y = data$Chlorella, z=data$Brachionus, type="scatter3d", mode="markers", color = data$meandelta)
+```
+
+```{r}
+g <- ggplot(data, aes(x=day., y=as.factor(meandelta)))
+g <- g + labs(x="Days",y="Delta",title="Sampling Days")
+g + geom_point()
+```
+
+#### Slice by delta, subset days
+
+```{r}
+d <- filter(data, chemostat == "5r3")
+g <- ggplot(d, aes(color=as.factor(meandelta)))
+g <- g + geom_point(aes(Chlorella, Brachionus))
+g + labs(title="Slices of the data show circles")
+```
+
+```{r}
+library(TDA)
+d <- d[,c(1,3)]
+d$Chlorella <- (d$Chlorella - mean(d$Chlorella))/sd(d$Chlorella)
+d$Brachionus <- (d$Brachionus - mean(d$Brachionus))/sd(d$Brachionus)
+maxscale <- 2 
+maxdimension <- 1
+Diag <- ripsDiag(X = d, maxdimension, maxscale, library = "GUDHI")
+plot(Diag[["diagram"]], barcode = TRUE)
+mtext("Barcode of 5r3 trial")
+legend("right", lty=c(1,1), lwd=c(3,3), col=c("red", "black"), legend=c("H1", "H0"))
+```
+
+```{r}
+d_5o2 <- filter(data, chemostat == "5o2")
+d_5ohigh <- filter(data, chemostat == "5ohigh")
+d_5b2 <- filter(data, chemostat == "5b2")
+d_5olow<-filter(data,chemostat=="5olow" & day. >= 47 & day. <= 79)
+d_5r3<-filter(data,chemostat=="5r3")
+d_5g2<-filter(data,chemostat=="5g2" & day. >= 24 & day. <= 43)
+d_5y3high<-filter(data,chemostat=="5y3high" & day. >= 73 & day. <= 92)
+d_tan<-filter(data,chemostat=="tan" & day. >= 77 & day. <= 124)
+
+
+df <- rbind(d_5o2,d_5ohigh,d_5b2,d_5olow,d_5r3,d_5g2,d_5y3high,
+            d_tan)
+
+```
+
+After hunting for smaller intervals of days, the dataset is now `r dim(df)[1]` by 3.
+
+```{r}
+# plot this whole day subset
+plot_ly(x = df$meandelta, y = df$Chlorella, z=df$Brachionus, type="scatter3d", mode="markers", color = df$meandelta)
+
+# compute barcode on a scaled version of this df
+df <- df[,c(1,3,5)]
+df$Chlorella <- scale(df$Chlorella)
+df$Brachionus <- scale(df$Brachionus)
+df$delta <- scale(df$delta)
+maxscale <- 2 
+maxdimension <- 2
+Diag <- ripsDiag(X = df, maxdimension, maxscale, library = "GUDHI")
+plot(Diag[["diagram"]], barcode = TRUE)
+mtext("Barcode of all trials")
+legend("right", lty=c(1,1), lwd=c(3,3), col=c("blue","red", "black"), legend=c("H2","H1", "H0"))
+
+```
+
+
+---
+
+### C. Clustering of Indian households
+
+[Based on [this report](https://lukewolcott.github.io/InTheResistance/Week19/NFHS-DHS-V.html).]
+
+I've been playing around with questionnaire data from India's National Family Health Survey 3, conducted 2005-2006.  One thing I looked at was how to cluster the households based on their characteristics -- is there electricity, a TV, a computer, chickens, ox-drawn carts, glass windows, etc?
+
+Here are some persistence diagrams.  These came from a 993 x 44 dataset and took my laptop 7.5 minutes to generate.
+
+![ ](india_barcode.png)
+
+![ ](india_diagram.png)
+
+---
+
+
+
